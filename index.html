@@ -1,0 +1,376 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tạo Prompt Ảnh Thờ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Noto+Serif+Display:wght@500;700&display=swap">
+<style>
+/* Layout: các nhóm tùy chọn xếp thành hàng ở bên trái (nhãn nhóm + chip), khung prompt cố định bên phải như một khung ảnh thờ. Trên điện thoại khung prompt xuống dưới và có thanh sao chép cố định. */
+:root{
+  --bg:#f0eded;
+  --surface:#faf8f8;
+  --inset:#f4f0f0;
+  --ink:#2b1d20;
+  --muted:#6a595c;
+  --line:#d8cdce;
+  --accent:#7a1f2b;
+  --accent-ink:#ffffff;
+  --sel-bg:#f3dfe2;
+  --sel-line:#7a1f2b;
+  --gold:#8f6a17;
+  --font-display:"Noto Serif Display","Noto Serif",Georgia,serif;
+  --font-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#140d0f;--surface:#1d1417;--inset:#110b0d;--ink:#f2e8e0;--muted:#aa999c;--line:#35262a;
+    --accent:#d9b15f;--accent-ink:#1a1012;--sel-bg:#342025;--sel-line:#d9b15f;--gold:#d9b15f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#140d0f;--surface:#1d1417;--inset:#110b0d;--ink:#f2e8e0;--muted:#aa999c;--line:#35262a;
+  --accent:#d9b15f;--accent-ink:#1a1012;--sel-bg:#342025;--sel-line:#d9b15f;--gold:#d9b15f;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:1.5rem 7rem;
+}
+.wrap{max-width:74rem;margin:0 auto}
+button,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.mark{flex:none;width:3rem;height:3rem;color:var(--gold)}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.4rem,4.5vw,2rem);line-height:1.2;margin:0;text-wrap:balance}
+.top p{margin:.2rem 0 0;color:var(--muted);max-width:56ch}
+
+.presets{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:1.25rem}
+.presets .lbl{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:.25rem}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.4rem .9rem;font-size:.85rem;cursor:pointer;min-height:2.25rem}
+.pill:hover{border-color:var(--gold);color:var(--gold)}
+
+.layout{display:grid;gap:1.5rem;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,25rem);gap:2.5rem;align-items:start}}
+
+.groups{border-top:1px solid var(--line);min-width:0}
+.group{display:grid;gap:.6rem 1.5rem;padding:1.1rem 0;border-bottom:1px solid var(--line)}
+@media(min-width:700px){.group{grid-template-columns:8.5rem minmax(0,1fr)}}
+.g-head h2{font-family:var(--font-display);font-weight:500;font-size:1.05rem;margin:0;line-height:1.3}
+.g-head p{margin:.1rem 0 0;font-size:.74rem;letter-spacing:.04em;color:var(--muted)}
+
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;min-width:0}
+.chip{
+  display:inline-flex;align-items:center;gap:.55rem;text-align:left;font-size:.9rem;line-height:1.35;
+  padding:.5rem .8rem;min-height:2.5rem;border:1px solid var(--line);background:var(--surface);
+  border-radius:8px;cursor:pointer;max-width:100%;transition:background .15s,border-color .15s;
+}
+.chip::before{content:"";flex:none;width:.7rem;height:.7rem;border:1.5px solid var(--muted);border-radius:2px}
+.chips[data-multi="false"] .chip::before{border-radius:50%}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-line)}
+.chip[aria-pressed="true"]::before{background:var(--sel-line);border-color:var(--sel-line)}
+
+.panel{
+  min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:1.25rem;display:flex;flex-direction:column;gap:1rem;
+}
+@media(min-width:960px){
+  .panel{position:sticky;top:calc(1.25rem + env(safe-area-inset-top,0px));max-height:calc(100vh - 2.5rem);overflow:auto}
+}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;flex-wrap:wrap}
+.panel h2{font-family:var(--font-display);font-weight:700;font-size:1.25rem;margin:0}
+.meta{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.out{
+  background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:1rem;min-height:9rem;
+  white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;font-size:.95rem;user-select:text;
+}
+.out.empty{color:var(--muted)}
+.field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.3rem}
+textarea{
+  width:100%;resize:vertical;min-height:3.5rem;padding:.6rem .75rem;border:1px solid var(--line);
+  border-radius:8px;background:var(--inset);
+}
+.check{display:flex;align-items:center;gap:.6rem;font-size:.88rem;cursor:pointer}
+.check input{width:1.05rem;height:1.05rem;accent-color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:.6rem}
+.btn{
+  border:1px solid transparent;border-radius:10px;padding:.75rem 1.1rem;font-weight:600;cursor:pointer;
+  min-height:2.9rem;transition:filter .15s,background .15s;
+}
+.btn-primary{background:var(--accent);color:var(--accent-ink);flex:1 1 12rem}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);font-weight:500}
+.btn-ghost:hover{border-color:var(--muted)}
+
+.bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:.75rem;
+  background:var(--surface);border-top:1px solid var(--line);
+  padding:.7rem max(16px,env(safe-area-inset-right,0px)) calc(.7rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+}
+.bar .meta{flex:1;min-width:0}
+.bar .btn{padding:.6rem 1rem;min-height:2.6rem}
+@media(min-width:960px){.bar{display:none}}
+body{--toast-bottom:5.5rem}
+@media(min-width:960px){body{--toast-bottom:1.5rem}}
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom,0px));
+  transform:translate(-50%,.5rem);opacity:0;pointer-events:none;z-index:30;
+  background:var(--ink);color:var(--bg);padding:.6rem 1rem;border-radius:999px;font-size:.88rem;
+  max-width:calc(100vw - 32px);transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <svg class="mark" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <circle cx="24" cy="24" r="21"/>
+      <circle cx="24" cy="24" r="15" stroke-dasharray="2 3"/>
+      <circle cx="24" cy="24" r="7" fill="currentColor" fill-opacity=".18"/>
+      <path d="M24 3v6M24 39v6M3 24h6M39 24h6"/>
+    </svg>
+    <div>
+      <h1>Tạo Prompt Ảnh Thờ</h1>
+      <p>Chọn màu da, mắt, mũi, thần thái và các chi tiết khác. Prompt hoàn chỉnh hiện ra ngay để bạn sao chép.</p>
+    </div>
+  </header>
+
+  <div class="presets" id="presets"><span class="lbl">Mẫu nhanh</span></div>
+
+  <div class="layout">
+    <div class="groups" id="groups"></div>
+
+    <aside class="panel" id="prompt" aria-label="Prompt hoàn chỉnh">
+      <div class="panel-head">
+        <h2>Prompt hoàn chỉnh</h2>
+        <span class="meta" id="meta">0 lựa chọn</span>
+      </div>
+      <div class="out empty" id="out" aria-live="polite"></div>
+      <div class="field">
+        <label for="note">Ghi chú thêm (tùy chọn)</label>
+        <textarea id="note" rows="2" placeholder="Ví dụ: áo cà sa màu nâu vàng, nền sáng"></textarea>
+      </div>
+      <label class="check" for="polite"><input type="checkbox" id="polite" checked> Thêm “Dạ” ở đầu và “ạ” ở cuối</label>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="copy">Sao chép prompt</button>
+        <button type="button" class="btn btn-ghost" id="reset">Xóa hết</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="bar">
+  <span class="meta" id="meta2">0 lựa chọn</span>
+  <button type="button" class="btn btn-ghost" id="view">Xem prompt</button>
+  <button type="button" class="btn btn-primary" id="copy2">Sao chép</button>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  var GROUPS=[
+    {id:"cach",label:"Cách chỉnh",multi:false,options:[
+      {id:"chuyen",label:"Chuyển hình dạng gương mặt",text:"chuyển hình dạng gương mặt sang nét nhận dạng khác hẳn với hình gốc ban đầu"},
+      {id:"giu",label:"Giữ khung xương, đổi diện mạo",text:"giữ lại hình dáng khung xương mặt và đầu, nhưng thay đổi diện mạo để nhìn khác biệt hơn với hình gốc ban đầu"},
+      {id:"kethop",label:"Kết hợp 2 hình",text:"kết hợp 2 hình này lại để tạo một nhân vật mới, đảm bảo gương mặt hài hòa"},
+      {id:"mix",label:"Mix lại (hình mới còn giống gốc)",text:"hình mới còn giống hình gốc ban đầu, hãy mix lại để ra một nhân vật mới khác biệt với 2 hình gốc"}
+    ]},
+    {id:"rau",label:"Râu tóc",multi:false,options:[
+      {id:"bo",label:"Bỏ râu tóc",text:"bỏ râu tóc"},
+      {id:"dau",label:"Đầu cạo, không râu",text:"đầu cạo sạch, không râu"}
+    ]},
+    {id:"nv",label:"Nhân vật",multi:false,options:[
+      {id:"arahan",label:"Thánh Tăng A La Hán Ấn Độ",text:"với nét nhận dạng là vị Thánh Tăng A La Hán người Ấn Độ"},
+      {id:"tongia",label:"Tôn giả Ấn Độ",text:"để thành gương mặt tôn giả Ấn Độ"},
+      {id:"thanh",label:"Vị thánh",text:"để thành gương mặt một vị thánh"}
+    ]},
+    {id:"tuoi",label:"Độ tuổi",multi:false,options:[
+      {id:"t30",label:"30 - 35 tuổi",text:"tầm 30 - 35 tuổi"},
+      {id:"t35",label:"35 - 40 tuổi",text:"tầm 35 - 40 tuổi"},
+      {id:"t45",label:"45 - 55 tuổi",text:"tầm 45 - 55 tuổi"}
+    ]},
+    {id:"da",label:"Màu da",multi:false,options:[
+      {id:"f2",label:"Sáng hơn, Fitzpatrick II",text:"làm da Ngài sáng hơn, ở mức Fitzpatrick II"},
+      {id:"f3",label:"Sáng vừa, Fitzpatrick III",text:"làm da Ngài sáng vừa, ở mức Fitzpatrick III"},
+      {id:"f4",label:"Nâu sáng, Fitzpatrick IV",text:"da nâu sáng tự nhiên của người Ấn Độ, ở mức Fitzpatrick IV"},
+      {id:"sang",label:"Da sáng, đều màu",text:"màu da sáng, đều màu"}
+    ]},
+    {id:"face",label:"Gương mặt",multi:true,options:[
+      {id:"an",label:"Thêm nét Ấn Độ",text:"thêm nét Ấn Độ rõ hơn để giống người Ấn Độ"},
+      {id:"cd",label:"Đẹp và cân đối",text:"gương mặt Ngài đẹp và cân đối hơn"},
+      {id:"tt",label:"Đẹp như thần thánh",text:"gương mặt đẹp như thần thánh"},
+      {id:"hh",label:"Đường nét hài hòa",text:"làm đường nét Ngài hài hòa hơn"}
+    ]},
+    {id:"eyes",label:"Mắt",multi:true,options:[
+      {id:"tn",label:"Ánh mắt có thần thái",text:"ánh mắt có thần thái"},
+      {id:"sn",label:"Sáng, sâu và nghiêm từ",text:"nhấn ánh mắt sáng, sâu và nghiêm từ"},
+      {id:"tb",label:"Từ bi, nhìn thẳng",text:"ánh mắt từ bi, nhìn thẳng"},
+      {id:"hd",label:"Mắt hạnh nhân, nét Ấn Độ",text:"mắt hạnh nhân, mí mắt buông nhẹ, nét Ấn Độ"}
+    ]},
+    {id:"brow",label:"Lông mày",multi:false,options:[
+      {id:"dam",label:"Đậm, cong nhẹ",text:"lông mày đậm, cong nhẹ, nét Ấn Độ"},
+      {id:"thanh",label:"Thanh, thẳng",text:"lông mày thanh, thẳng, cân đối với đôi mắt"}
+    ]},
+    {id:"nose",label:"Mũi",multi:false,options:[
+      {id:"cao",label:"Sống mũi cao, thẳng",text:"sống mũi cao, thẳng, nét Ấn Độ"},
+      {id:"thanh",label:"Mũi thanh, cân đối",text:"mũi thanh, cân đối với khuôn mặt"},
+      {id:"thon",label:"Cánh mũi thon gọn",text:"cánh mũi thon gọn"}
+    ]},
+    {id:"expr",label:"Biểu cảm",multi:false,options:[
+      {id:"nghiem",label:"Trang nghiêm, không cười",text:"nét mặt trang nghiêm, không cười"},
+      {id:"tb",label:"Từ bi, môi khép nhẹ",text:"gương mặt từ bi, môi khép nhẹ"},
+      {id:"nt",label:"Vừa nghiêm vừa từ",text:"vừa nghiêm từ, vừa có thần thái"}
+    ]},
+    {id:"goc",label:"Góc ảnh",multi:false,options:[
+      {id:"td",label:"Trực diện",text:"góc trực diện"},
+      {id:"cd",label:"Chính diện",text:"tạo hình góc chính diện"}
+    ]},
+    {id:"holy",label:"Linh thiêng",multi:true,options:[
+      {id:"lt",label:"Thêm sự linh thiêng cho khung hình",text:"thêm sự linh thiêng cho khung hình"},
+      {id:"tho",label:"Phù hợp làm ảnh thờ",text:"thêm yếu tố thần thánh để phù hợp làm ảnh thờ"},
+      {id:"haoquang",label:"Hào quang nhẹ quanh đầu",text:"có hào quang nhẹ quanh đầu"},
+      {id:"sang",label:"Ánh sáng dịu, trang nghiêm",text:"ánh sáng dịu, trang nghiêm"}
+    ]},
+    {id:"rule",label:"Giữ và khác biệt",multi:true,options:[
+      {id:"khac",label:"Không nhận ra nhân vật gốc",text:"đảm bảo khác biệt với hình gốc ban đầu để không nhận ra nhân vật gốc"},
+      {id:"kn",label:"Không giống nhân vật nào khác",text:"không giống với hình nhân vật nào khác"},
+      {id:"kx",label:"Giữ nguyên khung xương mặt và đầu",text:"giữ nguyên kích thước khung xương mặt và đầu"},
+      {id:"qt",label:"Giữ các quý tướng đang có",text:"giữ lại các quý tướng đang có"}
+    ]}
+  ];
+
+  var PRESETS=[
+    {label:"Đổi diện mạo, giữ khung xương",sel:{cach:["giu"],nv:["arahan"],da:["f2"],face:["an"],goc:["td"],rule:["khac","kx","qt"]}},
+    {label:"Bỏ râu tóc, tạo vị thánh mới",sel:{cach:["chuyen"],rau:["bo"],nv:["arahan"],goc:["td"],rule:["khac","kx"]}},
+    {label:"Làm đẹp thêm cho ảnh thờ",sel:{face:["tt","hh"],eyes:["tn","sn"],expr:["nt"],holy:["lt","tho"]}},
+    {label:"Da sáng, rõ nét Ấn Độ",sel:{tuoi:["t35"],da:["f2"],face:["an","cd"],brow:["dam"],nose:["cao"],expr:["nghiem"],goc:["td"]}}
+  ];
+
+  var KEY="tao-prompt-anh-tho-v1";
+  var $=function(s){return document.querySelector(s)};
+  var sel={},current="";
+  var out=$("#out"),note=$("#note"),polite=$("#polite"),toastEl=$("#toast");
+
+  function store(){try{localStorage.setItem(KEY,JSON.stringify({sel:sel,note:note.value,polite:polite.checked}))}catch(e){}}
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(!raw)return false;
+      var d=JSON.parse(raw);
+      if(!d||typeof d.sel!=="object")return false;
+      sel=d.sel;note.value=d.note||"";polite.checked=d.polite!==false;
+      return true;
+    }catch(e){return false}
+  }
+
+  function build(){
+    var host=$("#groups");
+    GROUPS.forEach(function(g){
+      var sec=document.createElement("section");
+      sec.className="group";
+      sec.setAttribute("aria-labelledby","h-"+g.id);
+      sec.innerHTML='<div class="g-head"><h2 id="h-'+g.id+'">'+g.label+'</h2><p>'+(g.multi?"Chọn nhiều":"Chọn một")+'</p></div>'+
+        '<div class="chips" data-g="'+g.id+'" data-multi="'+g.multi+'">'+
+        g.options.map(function(o){return '<button type="button" class="chip" data-o="'+o.id+'" aria-pressed="false">'+o.label+'</button>'}).join("")+
+        '</div>';
+      host.appendChild(sec);
+    });
+    var pr=$("#presets");
+    PRESETS.forEach(function(p,i){
+      var b=document.createElement("button");
+      b.type="button";b.className="pill";b.textContent=p.label;
+      b.addEventListener("click",function(){sel=JSON.parse(JSON.stringify(p.sel));update()});
+      pr.appendChild(b);
+    });
+  }
+
+  function buildPrompt(){
+    var parts=[];
+    GROUPS.forEach(function(g){
+      var arr=sel[g.id]||[];
+      g.options.forEach(function(o){if(arr.indexOf(o.id)>-1)parts.push(o.text)});
+    });
+    var n=note.value.trim().replace(/[.\s]+$/,"");
+    if(n)parts.push(n);
+    if(!parts.length)return{text:"",count:0};
+    var s=parts.join(", ");
+    var text=polite.checked?"Dạ "+s+" ạ.":s.charAt(0).toUpperCase()+s.slice(1)+".";
+    return{text:text,count:parts.length};
+  }
+
+  function update(){
+    document.querySelectorAll(".chip").forEach(function(b){
+      var gid=b.parentElement.dataset.g;
+      b.setAttribute("aria-pressed",(sel[gid]||[]).indexOf(b.dataset.o)>-1?"true":"false");
+    });
+    var r=buildPrompt();
+    current=r.text;
+    if(r.text){out.textContent=r.text;out.classList.remove("empty")}
+    else{out.textContent="Chọn các tùy chọn ở bên trái, prompt sẽ hiện ra ở đây.";out.classList.add("empty")}
+    var m=r.count?r.count+" lựa chọn · "+r.text.length+" ký tự":"0 lựa chọn";
+    $("#meta").textContent=m;$("#meta2").textContent=m;
+    $("#copy").disabled=!r.text;$("#copy2").disabled=!r.text;
+    store();
+  }
+
+  var tt;
+  function toast(msg){
+    toastEl.textContent=msg;toastEl.classList.add("show");
+    clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove("show")},2200);
+  }
+  function selectOut(){
+    try{
+      var rg=document.createRange();rg.selectNodeContents(out);
+      var s=window.getSelection();s.removeAllRanges();s.addRange(rg);
+      return document.execCommand("copy");
+    }catch(e){return false}
+  }
+  var flash;
+  function copy(){
+    if(!current)return;
+    var btns=[$("#copy"),$("#copy2")];
+    function done(){
+      toast("Đã sao chép prompt");
+      btns[0].textContent="Đã sao chép";btns[1].textContent="Đã chép";
+      clearTimeout(flash);
+      flash=setTimeout(function(){btns[0].textContent="Sao chép prompt";btns[1].textContent="Sao chép"},1800);
+    }
+    function fallback(){
+      if(selectOut())done();
+      else toast("Đã chọn sẵn văn bản, nhấn Ctrl+C (hoặc giữ để sao chép)");
+    }
+    try{
+      navigator.clipboard.writeText(current).then(done,fallback);
+    }catch(e){fallback()}
+  }
+
+  $("#groups").addEventListener("click",function(e){
+    var b=e.target.closest(".chip");
+    if(!b)return;
+    var gid=b.parentElement.dataset.g,oid=b.dataset.o;
+    var g=GROUPS.filter(function(x){return x.id===gid})[0];
+    var arr=sel[gid]||[];
+    if(arr.indexOf(oid)>-1)arr=arr.filter(function(x){return x!==oid});
+    else arr=g.multi?arr.concat(oid):[oid];
+    sel[gid]=arr;
+    update();
+  });
+  note.addEventListener("input",update);
+  polite.addEventListener("change",update);
+  $("#copy").addEventListener("click",copy);
+  $("#copy2").addEventListener("click",copy);
+  $("#reset").addEventListener("click",function(){sel={};note.value="";update();toast("Đã xóa hết lựa chọn")});
+  $("#view").addEventListener("click",function(){$("#prompt").scrollIntoView({behavior:"smooth",block:"start"})});
+
+  build();
+  if(!load())sel=JSON.parse(JSON.stringify(PRESETS[0].sel));
+  update();
+})();
+</script>
+
+</body></html>
