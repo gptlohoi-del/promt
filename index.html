@@ -51,6 +51,7 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.4rem,4.5vw,
 .presets .lbl{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:.25rem}
 .pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.4rem .9rem;font-size:.85rem;cursor:pointer;min-height:2.25rem}
 .pill:hover{border-color:var(--gold);color:var(--gold)}
+.pill-clear{margin-left:auto;border-color:var(--accent);color:var(--accent);font-weight:500}
 
 .layout{display:grid;gap:1.5rem;grid-template-columns:minmax(0,1fr)}
 @media(min-width:960px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,25rem);gap:2.5rem;align-items:start}}
@@ -158,7 +159,7 @@ body{--toast-bottom:5.5rem}
       <label class="check" for="polite"><input type="checkbox" id="polite" checked> Thêm “Dạ” ở đầu và “ạ” ở cuối</label>
       <div class="actions">
         <button type="button" class="btn btn-primary" id="copy">Sao chép prompt</button>
-        <button type="button" class="btn btn-ghost" id="reset">Xóa hết</button>
+        <button type="button" class="btn btn-ghost" id="reset">Xóa tất cả lựa chọn</button>
       </div>
     </aside>
   </div>
@@ -270,13 +271,14 @@ body{--toast-bottom:5.5rem}
 
   function build(){
     var host=$("#groups");
-    GROUPS.forEach(function(g){
+    var col=new Intl.Collator("vi");
+    GROUPS.slice().sort(function(a,b){return col.compare(a.label,b.label)}).forEach(function(g){
       var sec=document.createElement("section");
       sec.className="group";
       sec.setAttribute("aria-labelledby","h-"+g.id);
       sec.innerHTML='<div class="g-head"><h2 id="h-'+g.id+'">'+g.label+'</h2><p>'+(g.multi?"Chọn nhiều":"Chọn một")+'</p></div>'+
         '<div class="chips" data-g="'+g.id+'" data-multi="'+g.multi+'">'+
-        g.options.map(function(o){return '<button type="button" class="chip" data-o="'+o.id+'" aria-pressed="false">'+o.label+'</button>'}).join("")+
+        g.options.slice().sort(function(a,b){return col.compare(a.label,b.label)}).map(function(o){return '<button type="button" class="chip" data-o="'+o.id+'" aria-pressed="false">'+o.label+'</button>'}).join("")+
         '</div>';
       host.appendChild(sec);
     });
@@ -287,6 +289,10 @@ body{--toast-bottom:5.5rem}
       b.addEventListener("click",function(){sel=JSON.parse(JSON.stringify(p.sel));update()});
       pr.appendChild(b);
     });
+    var cb=document.createElement("button");
+    cb.type="button";cb.className="pill pill-clear";cb.id="clearAll";cb.textContent="Xóa tất cả lựa chọn";
+    cb.addEventListener("click",clearAll);
+    pr.appendChild(cb);
   }
 
   function buildPrompt(){
@@ -315,7 +321,6 @@ body{--toast-bottom:5.5rem}
     var m=r.count?r.count+" lựa chọn · "+r.text.length+" ký tự":"0 lựa chọn";
     $("#meta").textContent=m;$("#meta2").textContent=m;
     $("#copy").disabled=!r.text;$("#copy2").disabled=!r.text;
-    store();
   }
 
   var tt;
@@ -364,11 +369,12 @@ body{--toast-bottom:5.5rem}
   polite.addEventListener("change",update);
   $("#copy").addEventListener("click",copy);
   $("#copy2").addEventListener("click",copy);
-  $("#reset").addEventListener("click",function(){sel={};note.value="";update();toast("Đã xóa hết lựa chọn")});
+  function clearAll(){sel={};note.value="";update();toast("Đã xóa tất cả lựa chọn")}
+  $("#reset").addEventListener("click",clearAll);
   $("#view").addEventListener("click",function(){$("#prompt").scrollIntoView({behavior:"smooth",block:"start"})});
 
   build();
-  if(!load())sel=JSON.parse(JSON.stringify(PRESETS[0].sel));
+  sel={};
   update();
 })();
 </script>
